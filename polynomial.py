@@ -18,8 +18,10 @@ class Polynomial:
             self.coef= list(coefficients)
         elif isinstance(coefficients[0], int):
             self.coef[0]=coefficients[0]
-        while self.coef[-1]==0 and len(self.coef)>1:
+        while len(self.coef)>1 and self.coef[-1]==0:
             self.coef.pop()
+        self.counter = (-1, self.coef[0])
+
 
     def __repr__(self):
         outstr = 'Polynomial ['
@@ -57,12 +59,12 @@ class Polynomial:
                         outstr += ' - ' + 'x'
                     else:
                         outstr += ' - ' + str(-self.coef[i]) + 'x'
-            if i == 0 and self.coef[i]!=0:
+            if i == 0:
                 if outstr=='':
                     outstr=str(self.coef[i])
                 elif self.coef[i] > 0:
                     outstr += ' + ' + str(self.coef[i])
-                else:
+                elif self.coef[i] < 0:
                     outstr += ' - ' + str(-self.coef[i])
         return outstr
 
@@ -74,7 +76,7 @@ class Polynomial:
             new_coef=self.coef.copy()
             new_coef[0]+=other
             return Polynomial(new_coef)
-        if isinstance(other, Polynomial) and isinstance(self, Polynomial):
+        if isinstance(other, Polynomial):
             if self.degree()<other.degree():
                 new_coef=other.coef.copy()
                 for i in range(0, self.degree()+1):
@@ -84,10 +86,7 @@ class Polynomial:
                 for i in range(0, other.degree() + 1):
                     new_coef[i] += other.coef[i]
             return Polynomial(new_coef)
-        if isinstance(self, int) and isinstance(other, Polynomial):
-            new_coef=other.coef.copy()
-            new_coef[0]+=self
-            return Polynomial(new_coef)
+
 
     def __eq__(self, other):
         ans=1
@@ -106,7 +105,7 @@ class Polynomial:
             return ans
 
     def __radd__(self, other):
-        return Polynomial.__add__(other, self)
+        return Polynomial.__add__(self, other)
 
     def __neg__(self):
         if isinstance(self, int):
@@ -121,7 +120,7 @@ class Polynomial:
         return Polynomial.__add__(self, Polynomial.__neg__(other))
 
     def __rsub__(self, other):
-        return Polynomial.__radd__(other, Polynomial.__neg__(self))
+        return Polynomial.__radd__(Polynomial.__neg__(self), other)
 
     def __call__(self, x):
         ans=0
@@ -139,28 +138,115 @@ class Polynomial:
 
     def __mul__(self, other):
         if isinstance(other, int):
-            new_coef=self.coef.copy()
-            for c in new_coef:
-                c *= other
+            new_coef=[0]*(self.degree()+1)
+            for i in range(0, self.degree()+1):
+                new_coef[i] = self.coef[i]*other
+            return(Polynomial(new_coef))
+
         if isinstance(other, Polynomial):
+            new_coef=[0]*(self.degree()+other.degree()+1)
+            for i in range (0, self.degree()+1):
+                for j in range(0, other.degree()+1):
+                    new_coef[i+j]+=self.coef[i]*other.coef[j]
+            return(Polynomial(new_coef))
 
 
-  #  def __rmul__(self, other):
+    def __rmul__(self, other):
+        return Polynomial.__mul__(self, other)
 
-   # def __mod__(self, other):
+    def __mod__(self, other):
+        if isinstance(other, Polynomial):
+            new_coef=self.coef.copy()
+            if other.degree()==0:
+                return Polynomial(0)
+            while len(new_coef)>other.degree():
+                d=new_coef[-1]/other.coef[-1]
+                deg_dif = len(new_coef)-1-other.degree()
+                new_coef.pop()
+                for i in range(0, other.degree()):
+                    new_coef[deg_dif+i] -= other.coef[i]*d
+            return Polynomial(new_coef)
+        if isinstance(other, int):
+            return Polynomial(0)
 
-    #def __rmod__(self, other):
+    def __rmod__(self, other):
+        if isinstance(other, Polynomial):
+            return self
+        else:
+            return Polynomial(0)
 
-#    def gcd(self, other):
+    def gcd(self, other):
+        pol1=self
+        pol2=other
+        while pol1 % pol2 != 0 or pol2%pol1 != 0:
+            if pol1.degree()>=pol2.degree():
+                pol1=pol1%pol2
+            else:
+                pol2=pol2%pol1
+        if pol1%pol2 == 0:
+            return pol2
+        else:
+            return pol1
 
- #   def __iter__(self):
+    def __iter__(self):
+        return self
 
-  #  def __next__(self):
+    def __next__(self):
+        if self.counter[0] >= self.degree():
+            raise StopIteration
+        else:
+            i = self.counter[0]+1
+            self.counter = (i, self.coef[i])
+            return self.counter
 
 
-#class RealPolynomial(Polynomial):
- #   def find_root(self):
+class RealPolynomial(Polynomial):
+    def find_root(self):
+        E = 10**(-10)
+        a = 0
+        b = 1
+        while self.__call__(a)*self.__call__(b) >= 0 and self.__call__(-a)*self.__call__(-b) >= 0:
+            if self.__call__(a) == 0:
+                return a
+            elif self.__call__(-a) == 0:
+                return -a
+            else:
+                a+=1
+                b+=1
+        if self.__call__(a)*self.__call__(b) > 0:
+            a=-a
+            b=-b
+        xn = a
+        while abs(b - a) > 2 * E:
+            xn = (a + b) / 2
+            if self.__call__(a)*self.__call__(xn) < 0:
+                b = xn
+            else:
+                a = xn
+        return (round(xn, 10))
 
 
-#class QuadraticPolynomial(Polynomial):
- #   def solve(self):
+import math
+
+class QuadraticPolynomial(Polynomial):
+    def solve(self):
+        a = self.coef[2]
+        b = self.coef[1]
+        c=self.coef[0]
+        if a != 0:
+            D=b**2-4*a*c
+            if D < 0:
+                return []
+            if D == 0:
+                return [-b/2/a]
+            if D > 0:
+                return [-(b+math.sqrt(D))/2/a, -(b-math.sqrt(D))/2/a]
+        if a == 0:
+            if b!=0:
+                return [-c/b]
+            if b == 0:
+                if c!=0:
+                    return []
+                else:
+                    return 'Any real number is a solution.'
+

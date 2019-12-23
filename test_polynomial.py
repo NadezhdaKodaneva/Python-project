@@ -2,8 +2,8 @@ import pytest
 import random
 
 from polynomial import Polynomial
-#from polynomial import RealPolynomial
-#from polynomial import QuadraticPolynomial
+from polynomial import RealPolynomial
+from polynomial import QuadraticPolynomial
 
 
 def test_init():
@@ -79,3 +79,44 @@ def test_der():
     assert str(poly.der(0)) == str(poly)
     assert str(poly.der()) == '30x^5 + 5x^4 + 8x^3 + 6x^2 + 4x + 4'
     assert str(poly.der(5)) == '3600x + 120'
+
+def test_mul():
+    poly_lhs = Polynomial([9, 6, 1, 1, 9, 9, 8])
+    poly_rhs = Polynomial([7, 5, 1, 0, 6])
+    assert poly_lhs * poly_rhs == poly_rhs * poly_lhs
+    assert str(
+        poly_lhs * poly_rhs) == '48x^10 + 54x^9 + 62x^8 + 55x^7 + 116x^6 + 145x^5 + 123x^4 + 18x^3 + 46x^2 + 87x + 63'
+    assert str(3*poly_rhs*2) == '36x^4 + 6x^2 + 30x + 42'
+
+def test_gcd():
+    poly_lhs = Polynomial([1, 2, 5, 8, 4])
+    poly_rhs = Polynomial([0, 1, 2])
+    poly_res = Polynomial([1, 1])
+    assert poly_lhs % poly_rhs == poly_res
+
+    poly_lhs = Polynomial([1, 1, 1, 1])
+    poly_rhs = Polynomial([1, 0, 0, 1])
+    assert poly_lhs.gcd(poly_rhs) == poly_res
+
+def test_iter():
+    poly = Polynomial([1, 1, 5, 3, 9])
+    pairs = [i for i in poly]
+    true_pairs = [(0, 1), (1, 1), (2, 5), (3, 3), (4, 9)]
+    for i in range(len(true_pairs)):
+        assert pairs[i] == true_pairs[i]
+
+def test_quadratic():
+    poly = QuadraticPolynomial([-15, 7, 2])
+    assert sorted(poly.solve()) == [-5.0, 1.5]
+
+def test_real_poly():
+    poly = RealPolynomial([2, 2, 9, 9, 7, 1, 8, 8])
+    eps = 1e-6
+    root = poly.find_root()
+
+    assert abs(poly(root)) < eps
+
+    poly1 = RealPolynomial([-1000, 1])
+    root1 = poly1.find_root()
+
+    assert abs(poly1(root1)) < eps
